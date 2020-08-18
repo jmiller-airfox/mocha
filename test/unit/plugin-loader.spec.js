@@ -352,7 +352,7 @@ describe('plugin module', function() {
     });
   });
 
-  describe('root hoots plugin', function() {
+  describe('root hooks plugin 🎣', function() {
     let pluginLoader;
 
     beforeEach(function() {
