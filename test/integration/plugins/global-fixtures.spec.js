@@ -1,7 +1,5 @@
 'use strict';
 
-const os = require('os');
-const fs = require('fs-extra');
 const path = require('path');
 const {
   touchFile,
@@ -9,7 +7,8 @@ const {
   runMochaWatchAsync,
   copyFixture,
   DEFAULT_FIXTURE,
-  resolveFixturePath
+  resolveFixturePath,
+  createTempDir
 } = require('../helpers');
 
 describe('global setup/teardown', function() {
@@ -18,25 +17,49 @@ describe('global setup/teardown', function() {
       return expect(
         runMochaAsync(DEFAULT_FIXTURE, [
           '--require',
-          resolveFixturePath(
-            'plugins/global-setup-teardown/global-setup-teardown'
-          )
+          resolveFixturePath('plugins/global-fixtures/global-setup-teardown')
         ]),
         'when fulfilled',
         'to have passed'
       );
     });
 
+    describe('when only global teardown is supplied', function() {
+      it('should run global teardown', async function() {
+        return expect(
+          runMochaAsync(DEFAULT_FIXTURE, [
+            '--require',
+            resolveFixturePath('plugins/global-fixtures/global-teardown')
+          ]),
+          'when fulfilled',
+          'to contain once',
+          /teardown schmeardown/
+        );
+      });
+    });
+
+    describe('when only global setup is supplied', function() {
+      it('should run global setup', async function() {
+        return expect(
+          runMochaAsync(DEFAULT_FIXTURE, [
+            '--require',
+            resolveFixturePath('plugins/global-fixtures/global-setup')
+          ]),
+          'when fulfilled',
+          'to contain once',
+          /setup schmetup/
+        );
+      });
+    });
+
     it('should share context', async function() {
       return expect(
         runMochaAsync(DEFAULT_FIXTURE, [
           '--require',
-          resolveFixturePath(
-            'plugins/global-setup-teardown/global-setup-teardown'
-          )
+          resolveFixturePath('plugins/global-fixtures/global-setup-teardown')
         ]),
         'when fulfilled',
-        'to contain',
+        'to contain once',
         /setup: this\.foo = bar[\s\S]+teardown: this\.foo = bar/
       );
     });
@@ -47,11 +70,11 @@ describe('global setup/teardown', function() {
           runMochaAsync(DEFAULT_FIXTURE, [
             '--require',
             resolveFixturePath(
-              'plugins/global-setup-teardown/global-setup-teardown-multiple'
+              'plugins/global-fixtures/global-setup-teardown-multiple'
             )
           ]),
           'when fulfilled',
-          'to contain',
+          'to contain once',
           /teardown: this.foo = 3/
         );
       });
@@ -60,16 +83,19 @@ describe('global setup/teardown', function() {
     describe('when run in watch mode', function() {
       let tempDir;
       let testFile;
+      let removeTempDir;
 
       beforeEach(async function() {
-        tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'mocha-'));
+        const tempInfo = await createTempDir();
+        tempDir = tempInfo.dirpath;
+        removeTempDir = tempInfo.removeTempDir;
         testFile = path.join(tempDir, 'test.js');
         copyFixture(DEFAULT_FIXTURE, testFile);
       });
 
       afterEach(async function() {
-        if (tempDir) {
-          return fs.remove(tempDir);
+        if (removeTempDir) {
+          return removeTempDir();
         }
       });
 
@@ -79,7 +105,7 @@ describe('global setup/teardown', function() {
             [
               '--require',
               resolveFixturePath(
-                'plugins/global-setup-teardown/global-setup-teardown'
+                'plugins/global-fixtures/global-setup-teardown'
               ),
               testFile
             ],
@@ -93,13 +119,55 @@ describe('global setup/teardown', function() {
         );
       });
 
+      describe('when only global teardown is supplied', function() {
+        it('should run global teardown', async function() {
+          return expect(
+            runMochaWatchAsync(
+              [
+                '--require',
+                resolveFixturePath('plugins/global-fixtures/global-teardown'),
+                testFile
+              ],
+              tempDir,
+              () => {
+                touchFile(testFile);
+              }
+            ),
+            'when fulfilled',
+            'to contain once',
+            /teardown schmeardown/
+          );
+        });
+      });
+
+      describe('when only global setup is supplied', function() {
+        it('should run global setup', async function() {
+          return expect(
+            runMochaWatchAsync(
+              [
+                '--require',
+                resolveFixturePath('plugins/global-fixtures/global-setup'),
+                testFile
+              ],
+              tempDir,
+              () => {
+                touchFile(testFile);
+              }
+            ),
+            'when fulfilled',
+            'to contain once',
+            /setup schmetup/
+          );
+        });
+      });
+
       it('should not re-execute the global fixtures', async function() {
         return expect(
           runMochaWatchAsync(
             [
               '--require',
               resolveFixturePath(
-                'plugins/global-setup-teardown/global-setup-teardown-multiple'
+                'plugins/global-fixtures/global-setup-teardown-multiple'
               ),
               testFile
             ],
@@ -122,9 +190,7 @@ describe('global setup/teardown', function() {
         runMochaAsync(DEFAULT_FIXTURE, [
           '--parallel',
           '--require',
-          require.resolve(
-            '../fixtures/plugins/global-setup-teardown/global-setup-teardown.fixture.js'
-          )
+          resolveFixturePath('plugins/global-fixtures/global-setup-teardown')
         ]),
         'when fulfilled',
         'to have passed'
@@ -136,14 +202,12 @@ describe('global setup/teardown', function() {
         runMochaAsync(DEFAULT_FIXTURE, [
           '--parallel',
           '--require',
-          require.resolve(
-            '../fixtures/plugins/global-setup-teardown/global-setup-teardown.fixture.js'
-          )
+          resolveFixturePath('plugins/global-fixtures/global-setup-teardown')
         ]),
         'when fulfilled',
-        'to contain',
+        'to contain once',
         /setup: this.foo = bar/
-      ).and('when fulfilled', 'to contain', /teardown: this.foo = bar/);
+      ).and('when fulfilled', 'to contain once', /teardown: this.foo = bar/);
     });
 
     describe('when supplied multiple functions', function() {
@@ -152,12 +216,12 @@ describe('global setup/teardown', function() {
           runMochaAsync(DEFAULT_FIXTURE, [
             '--parallel',
             '--require',
-            require.resolve(
-              '../fixtures/plugins/global-setup-teardown/global-setup-teardown-multiple.fixture.js'
+            resolveFixturePath(
+              'plugins/global-fixtures/global-setup-teardown-multiple'
             )
           ]),
           'when fulfilled',
-          'to contain',
+          'to contain once',
           /teardown: this.foo = 3/
         );
       });
@@ -166,16 +230,19 @@ describe('global setup/teardown', function() {
     describe('when run in watch mode', function() {
       let tempDir;
       let testFile;
+      let removeTempDir;
 
       beforeEach(async function() {
-        tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'mocha-'));
+        const tempInfo = await createTempDir();
+        tempDir = tempInfo.dirpath;
+        removeTempDir = tempInfo.removeTempDir;
         testFile = path.join(tempDir, 'test.js');
         copyFixture(DEFAULT_FIXTURE, testFile);
       });
 
       afterEach(async function() {
-        if (tempDir) {
-          return fs.remove(tempDir);
+        if (removeTempDir) {
+          return removeTempDir();
         }
       });
 
@@ -185,8 +252,8 @@ describe('global setup/teardown', function() {
             [
               '--parallel',
               '--require',
-              require.resolve(
-                '../fixtures/plugins/global-setup-teardown/global-setup-teardown.fixture.js'
+              resolveFixturePath(
+                'plugins/global-fixtures/global-setup-teardown'
               ),
               testFile
             ],
@@ -206,8 +273,8 @@ describe('global setup/teardown', function() {
             [
               '--parallel',
               '--require',
-              require.resolve(
-                '../fixtures/plugins/global-setup-teardown/global-setup-teardown-multiple.fixture.js'
+              resolveFixturePath(
+                'plugins/global-fixtures/global-setup-teardown-multiple'
               ),
               testFile
             ],

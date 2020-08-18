@@ -1,7 +1,6 @@
 'use strict';
 
 const escapeRegExp = require('escape-string-regexp');
-const {sync: rimraf} = require('rimraf');
 const os = require('os');
 const fs = require('fs-extra');
 const {format} = require('util');
@@ -520,8 +519,8 @@ const createTempDir = async () => {
   const dirpath = await fs.mkdtemp(path.join(os.tmpdir(), 'mocha-'));
   return {
     dirpath,
-    removeTempDir: () => {
-      rimraf(dirpath);
+    removeTempDir: async () => {
+      return fs.remove(dirpath);
     }
   };
 };

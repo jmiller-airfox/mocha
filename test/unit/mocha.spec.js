@@ -52,10 +52,7 @@ describe('Mocha', function() {
     sinon.stub(Mocha.reporters, 'spec').returns({});
 
     runner = utils.assign(sinon.createStubInstance(EventEmitter), {
-      run: sinon
-        .stub()
-        .callsArgAsync(0)
-        .returnsThis(),
+      runAsync: sinon.stub().resolves(0),
       globals: sinon.stub(),
       grep: sinon.stub(),
       dispose: sinon.stub()
@@ -716,14 +713,14 @@ describe('Mocha', function() {
           );
         });
 
-        it('should not call `Runner#run`', function(done) {
+        it('should not call `Runner#runAsync`', function(done) {
           mocha.run(done); // this is async!
           try {
             mocha.run();
           } catch (ignored) {
           } finally {
             // it'll be 0 or 1, depending on timing.
-            expect(runner.run.callCount, 'to be less than', 2);
+            expect(runner.runAsync.callCount, 'to be less than', 2);
           }
         });
       });
@@ -747,12 +744,12 @@ describe('Mocha', function() {
           );
         });
 
-        it('should not call `Runner#run`', function() {
+        it('should not call `Runner#runAsync`', function() {
           try {
             mocha.run();
           } catch (ignored) {
           } finally {
-            expect(runner.run, 'was not called');
+            expect(runner.runAsync, 'was not called');
           }
         });
       });
@@ -760,7 +757,7 @@ describe('Mocha', function() {
       describe('when a run has finished and is called again', function() {
         beforeEach(function(done) {
           mocha.run(function() {
-            runner.run.reset();
+            runner.runAsync.reset();
             done();
           });
         });
@@ -778,12 +775,12 @@ describe('Mocha', function() {
           );
         });
 
-        it('should not call `Runner#run()`', function() {
+        it('should not call `Runner#runAsync()`', function() {
           try {
             mocha.run();
           } catch (ignored) {
           } finally {
-            expect(runner.run, 'was not called');
+            expect(runner.runAsync, 'was not called');
           }
         });
       });
@@ -799,10 +796,10 @@ describe('Mocha', function() {
           });
         });
 
-        it('should call `Runner#run` for each call', function(done) {
+        it('should call `Runner#runAsync` for each call', function(done) {
           mocha.run(function() {
             mocha.run(function() {
-              expect(runner.run, 'was called twice');
+              expect(runner.runAsync, 'was called twice');
               done();
             });
           });
