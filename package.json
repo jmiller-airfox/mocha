@@ -148,7 +148,7 @@
     "unexpected": "^11.14.0",
     "unexpected-eventemitter": "^2.2.0",
     "unexpected-map": "^2.0.0",
-    "unexpected-set": "^2.0.1",
+    "unexpected-set": "github:unexpectedjs/unexpected-set#1d2bfb5",
     "unexpected-sinon": "^10.11.2",
     "update-notifier": "^4.1.0",
     "uslug": "^1.0.4",
